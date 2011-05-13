@@ -70,12 +70,12 @@ How do I use in Rails 3
 
 in Gemfile
 
-    gem 'rack-rsi'
+    gem 'rack-rsi', :require => 'rack/rsi'
 
 in config/application.rb
 
     # Rack::RSI should be loaded high up the Rack Middleware Stack
-    config.middleware.insert_after Rack::Runtime, Rack::RSI
+    config.middleware.insert_before ActionDispatch::Callbacks, Rack::RSI
 
 in controller action
 
@@ -91,10 +91,18 @@ in view template foo_action.html.erb
     <%%= rsi_include( '/path/to_include' ) %>
     ...
 
+How do I use it with Bare Rack Apps
+-----------------------------------
+
+look for hello_world_app.rb in examples fold
+
+
 Limitations
 ------------
 
 * Only GET requests are supported as rack side includes
+* Include requests should not return redirect response
+* There should be no ERB tags other than ones invoking *rsi_include*.
 
 License
 -------
