@@ -1,0 +1,15 @@
+v 0.0.2
+-------
+* Improved Documentation
+* Recursive rsi_include upto 5 levels.
+* Application can choose to raise on errors or ignore erros when a
+target is included
+* Hello World Example extended to showcase rsi_include capability
+* In-case of redirect and rack.rsi header set then assembly is not
+invoked.
+
+v 0.0.1
+-------
+* Supports ETag Header Tag
+* Supports Cache-Control Header Tag
+* Supports Content-Length Header Tag

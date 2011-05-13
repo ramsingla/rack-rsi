@@ -14,13 +14,13 @@ class Rack::RSI
 
   class RsiRender
 
-    def initialize( app, env, level = 0 )
+    def initialize( app, env, level = 1 )
       @app, @env, @level = app, env, level
       @headers, @body = {}, {}
     end
 
     def rack_rsi?
-      @headers.values.select{ |x| x && x['rack.esi'] }.any?
+      @headers.values.select{ |x| x && x['rack.rsi'] }.any?
     end
 
     def cache_control_headers
@@ -31,7 +31,8 @@ class Rack::RSI
       return binding( )
     end
 
-    def rsi_include( source )
+    def rsi_include( source, raise_on_error = false )
+      return "" unless @level < 5
       uri = URI.parse( source )
       include_env = @env.merge( "PATH_INFO" => uri.path,
                                "SCRIPT_NAME" => "",
@@ -42,6 +43,7 @@ class Rack::RSI
         @headers[ source ] = include_headers
         @body[ source ] = ( include_status == 200 ? include_body : [] )
       rescue Exception => message
+        raise message if raise_on_error
         @body[ source ] = []
       end
       value = ''
@@ -68,7 +70,10 @@ class Rack::RSI
     status, headers, enumerable_body = original_response = @app.call(env)
 
     rack_rsi_flag = headers.delete('rack.rsi')
-    return original_response unless rack_rsi_flag
+
+    # Assemble Pages if rack_rsi_flag is set and status is 200 ok
+    # otherwise return the original response
+    return original_response unless rack_rsi_flag && status == 200
 
     body = ""
     enumerable_body.each do |part|
@@ -78,7 +83,7 @@ class Rack::RSI
     cache_control_headers = Array( headers.delete( 'Cache-Control' ) || "max-age=0" )
 
     # Like Varnish supports upto 5 levels of ESI includes recursively
-    level = 0
+    level = 1
     while( rack_rsi_flag )
       erb = ERB.new( body, 0 )
       renderer = RsiRender.new( vanilla_app, vanilla_env, level )
@@ -94,7 +99,8 @@ class Rack::RSI
 
     # For Assembled Pages Cache-Control to be set as private, with
     # max-age=<minimum max-age of all the requests that are assembled>
-    # and should be revalidate on stale
+    # and should be revalidate on stale. If max-age is not set for even one of the
+    # requests then max-age is set to 0.
     min_max_age = cache_control_headers.collect{ |x| x.match(/max-age\s*=\s*(\d+)/).to_a[1].to_i }.min
 
     headers['Cache-Control'] = "private, max-age=#{min_max_age}, must-revalidate"
@@ -105,7 +111,7 @@ class Rack::RSI
     headers['Content-Length'] = Rack::Utils.bytesize( body ).to_s
 
     # For now whatever headers is set by the original action would be
-    # passed on. Expect for Cache-Control, ETag, Expires, Last-Modified
+    # passed on. Except for Cache-Control, ETag, Expires, Last-Modified
     # Cookies from the original action are passed on.
     [ status, headers, [ body ] ]
   end

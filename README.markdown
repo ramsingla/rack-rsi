@@ -91,10 +91,31 @@ in view template foo_action.html.erb
     <%%= rsi_include( '/path/to_include' ) %>
     ...
 
+NOTE please make sure you write the target path as strings rather than
+method names e.g.:
+
+    ...
+    <%%= rsi_include( '/contacts/1' ) %>
+    ...
+
+Or if you want to use path helpers than trick ERB to generate ERB tags
+as follows:
+
+    ...
+    <%= "<%= rsi_include( '#{contact_path(1)}' ) ".html_safe %> %>
+    ...
+
 How do I use it with Bare Rack Apps
 -----------------------------------
 
-look for hello_world_app.rb in examples fold
+look for hello_world_app.rb in examples folder
+
+    cd examples
+    rackup
+    open http://127.0.0.1:9292/
+    open http://127.0.0.1:9292/recursive
+    open http://127.0.0.1:9292/noerror
+    open http://127.0.0.1:9292/error
 
 
 Limitations
